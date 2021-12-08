@@ -9,17 +9,17 @@ if __name__ == '__main__':
 
     # -------------------------------------------------------------------
     # configuration 1 (node 11 element 6)
-    # nodeCoord = np.array([[0, 0], [1, 0], [1, 1],
-    #                       [0, 1], [2, 0], [2, 1],
-    #                       [2, 2], [1, 2], [0, 2],
-    #                       [2, 3], [1, 3], [0, 3]], dtype=np.float)
-    # node2Element = np.array([[0, 1, 2, 3], [1, 4, 5, 2], [2, 5,6,7], [3,2,7,8],
-    #                          [7, 6, 9, 10], [8, 7, 10, 11]])
-    # f = np.zeros_like(nodeCoord, dtype=np.float)  # node force
-    # f[9] =f[10]=f[11]= np.array([0, -2e6])
-    # mask = np.zeros_like(nodeCoord)  # node constraints of displacement
-    # mask[0] = np.array([1, 1])
-    # mask[4] = np.array([0, 1])
+    nodeCoord = np.array([[0, 0], [1, 0], [1, 1],
+                          [0, 1], [2, 0], [2, 1],
+                          [2, 2], [1, 2], [0, 2],
+                          [2, 3], [1, 3], [0, 3]], dtype=np.float)
+    node2Element = np.array([[0, 1, 2, 3], [1, 4, 5, 2], [2, 5, 6, 7], [3,2,7,8],
+                             [7, 6, 9, 10], [8, 7, 10, 11]])
+    f = np.zeros_like(nodeCoord, dtype=np.float)  # node force
+    f[9] =f[10]=f[11]= np.array([0, -2e6])
+    mask = np.zeros_like(nodeCoord)  # node constraints of displacement
+    mask[0] = np.array([1, 1])
+    mask[4] = np.array([0, 1])
 
     # configuration 2 (node 9 element 4)
     # nodeCoord = np.array([[0, 0], [1, 0], [2, 0], [0, 1],
@@ -42,13 +42,13 @@ if __name__ == '__main__':
     # mask[6] = np.array([0, 1])
 
     # configuration 4 (node 6 element 2)
-    nodeCoord = np.array([[0, 0], [1, 0], [1, 1], [0, 1], [2, 0], [2, 1]], dtype=np.float)
-    node2Element = np.array([[0, 1, 2, 3], [1, 4, 5, 2]])
-    f = np.zeros_like(nodeCoord, dtype=np.float)  # node force
-    f[2] = np.array([-5e6, -5e6])
-    mask = np.zeros_like(nodeCoord)  # node constraints of displacement
-    mask[0] = np.array([1, 1])
-    mask[4] = np.array([0, 1])
+    # nodeCoord = np.array([[0, 0], [1, 0], [1, 1], [0, 1], [2, 0], [2, 1]], dtype=np.float)
+    # node2Element = np.array([[0, 1, 2, 3], [1, 4, 5, 2]])
+    # f = np.zeros_like(nodeCoord, dtype=np.float)  # node force
+    # f[2] = np.array([-5e6, -5e6])
+    # mask = np.zeros_like(nodeCoord)  # node constraints of displacement
+    # mask[0] = np.array([1, 1])
+    # mask[4] = np.array([0, 1])
 
     nodeNum, elementNum = len(nodeCoord), len(node2Element)
     nodeIndex = np.arange(nodeNum)
@@ -70,4 +70,5 @@ if __name__ == '__main__':
     for j in range(nodeNum):
         plt.text(x=nodeCoord[j, 0], y=nodeCoord[j, 1], s=str(j))
     plt.axis('equal')
+    # plt.show()
     plt.savefig("./node_%d_element_%d.png" % (nodeNum, elementNum), pmi=200)
