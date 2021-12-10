@@ -3,6 +3,7 @@ import sympy
 import sympy as sym
 import matplotlib.pyplot as plt
 import scipy as sp
+from scipy.interpolate import griddata
 
 
 class TwoDimensionShape:
@@ -11,6 +12,7 @@ class TwoDimensionShape:
         self.Nnum = 4
         self.gaussianPoints = self.getGaussian()
         self.N, self.N_diff_local = self.getN_diff()
+        self.N_diff_global = self.N_diff_local
         self.elementStiffness = self.getElementStiffness()
 
     def getGaussian(self):
@@ -50,19 +52,30 @@ class TwoDimensionShape:
         je = np.einsum('ni,pnj->pij', x, self.N_diff_local)  # pij
         je_det = np.linalg.det(je)  # p
         je_inv = np.linalg.inv(je)  # pij -> pji
-        N_diff_global = np.einsum('pmj,pji->pmi', self.N_diff_local, je_inv)
+        self.N_diff_global = np.einsum('pmj,pji->pmi', self.N_diff_local, je_inv)
         # NOTE: VERY IMPORTANT!!!!!
-        K_element = np.einsum('pmk,ikjl,pnl,p->minj', N_diff_global, D, N_diff_global, je_det)
-        # K_element = np.einsum('pmk,ijkl,pnl,p->minj', N_diff_global, D, N_diff_global, je_det)
+        K_element = np.einsum('pmi,ijkl,pnk,p->mjnl', self.N_diff_global, D, self.N_diff_global, je_det)
         return K_element
 
-    def displacementBoundaryCondition(self, K_global, mask, uValue, f):
+    def displacementBoundaryCondition(self, K_global, mask, f):
         mask_free = np.equal(mask, 0)
-        nNode = mask.shape[0]
         K_free = K_global[mask_free][:, mask_free]
         f_free = f[mask_free]
+        return K_free, f_free
+
+    def getStrain(self, u, node2Element, nodeCoord):
+        uElementNode = u[node2Element]
+        coordElementNode = nodeCoord[node2Element]
+        epsilon = np.einsum('pmi, qmj->pqij', uElementNode, self.N_diff_global)
+        epsilon = 0.5*(epsilon + np.einsum('pqij->pqji', epsilon))
+        epsilonCoord = np.einsum('pmi, qm->pqi', coordElementNode, self.N)
+        return epsilon, epsilonCoord
+
+    def solve(self, mask, K_global, K_free, f_free, uValue):
+        mask_free = np.equal(mask, 0)
+        nNode = mask_free.shape[0]
         u_free = np.linalg.solve(K_free, f_free)
-        u = np.zeros_like(mask, dtype=np.float)
+        u = np.zeros_like(mask_free, dtype=np.float)
         tempPointer = 0
         for i in range(nNode):
             for j in range(self.ndim):
@@ -74,8 +87,17 @@ class TwoDimensionShape:
         f_calculated = np.einsum('minj, nj->mi', K_global, u)
         return u, f_calculated
 
+    def interpolateStrainToNode(self, nodecoord, node2Elment, epsilon):
+        nNode = len(nodecoord)
+        epsilonNode = np.zeros(shape=(nNode, self.ndim, self.ndim))
+        N_inv = np.linalg.inv(self.N)
+        for i, element in enumerate(node2Elment):
+            epsilonElement = epsilon[i]
+            epsilonNode[element] += np.einsum('mn, mij->nij', N_inv, epsilonElement)
+        return epsilonNode
 
-def stiffnessLocal2Global(nodeIndex, kList, node2Element, ndim=2, Nnum=4):
+
+def stiffnessAssembling(nodeIndex, kList, node2Element, ndim=2, Nnum=4):
     nodeNum = len(nodeIndex)
     elementNum = len(node2Element)
     k_global = np.zeros(shape=(nodeNum, ndim, nodeNum, ndim), dtype=np.float)
@@ -88,16 +110,25 @@ def stiffnessLocal2Global(nodeIndex, kList, node2Element, ndim=2, Nnum=4):
     return k_global
 
 
+
 def plotElement(coord, *args):
     coord = np.concatenate((coord, coord[0:1]))
     plt.plot(coord[:, 0], coord[:, 1], *args)
     return
 
 
+def plotGuassian(coord, *args):
+    for gaussianPoints in coord:
+        plt.plot(gaussianPoints[:, 0], gaussianPoints[:, 1], *args)
+    for i, coorGaussian in enumerate(coord[0]):
+        plt.text(x=coorGaussian[0], y=coorGaussian[1], s=str(i))
+    return
+
+
 if __name__ == "__main__":
     # ----------------------------------------------------
     # shape function
-    a = TwoDimensionShape()
+    domain = TwoDimensionShape()
     nodeCoord = np.array([[0., 0.], [1., 0.], [1., 1.], [0., 1.]], dtype=np.float)
     node2Element = np.array([[0, 1, 2, 3]])
     elementNum = len(node2Element)
@@ -105,8 +136,8 @@ if __name__ == "__main__":
     x = nodeCoord[node2Element[0]]
     k = []
     for i in range(elementNum):
-        k.append(a.getElementStiffness(x=nodeCoord[node2Element[i]]))
-    K_global = stiffnessLocal2Global(nodeIndex=nodeIndex, kList=k, node2Element=node2Element)
+        k.append(domain.getElementStiffness(x=nodeCoord[node2Element[i]]))
+    K_global = stiffnessAssembling(nodeIndex=nodeIndex, kList=k, node2Element=node2Element)
 
     ndim = x.shape[-1]
     nNode = x.shape[0]
@@ -121,13 +152,33 @@ if __name__ == "__main__":
     mask_constrained[0] = np.array([1, 1])  # where the 1st boundary condition is applied
     mask_constrained[1] = np.array([0, 1])  # where the 1st boundary condition is applied
     uValue = mask_constrained*0.
-    u, f_node = a.displacementBoundaryCondition(K_global, mask_constrained, uValue, f)
+    k_free, f_free = domain.displacementBoundaryCondition(K_global=K_global, mask=mask_constrained, f=f)
+    u, f_node = domain.solve(mask=mask_constrained, K_global=K_global,
+        K_free=k_free, f_free=f_free, uValue=uValue)
+    epsilon, gaussianCoord = domain.getStrain(u=u, node2Element=node2Element, nodeCoord=nodeCoord+u)
 
     x_ = nodeCoord+u
-    plotElement(nodeCoord, 'ro-')
+    plotElement(nodeCoord, 'ko-')
     plotElement(x_, 'bo-')
+    plotGuassian(gaussianCoord, 'ro')
     for i in range(4):
         plt.text(x=nodeCoord[i, 0], y=nodeCoord[i, 1], s='%d' % i, fontsize=15)
     plt.axis('equal')
+    plt.show()
+
+
+    # ---------------------------------------------
+    # plot strain
+    gaussianCoordTranspose = gaussianCoord.reshape(-1, 2)
+    objectValue = []
+    for element in epsilon:
+        for gaussian in element:
+            objectValue.append(gaussian[1, 1])
+    x = np.linspace(0, 1, 100)
+    y = np.linspace(0, 1, 100)
+    X, Y = np.meshgrid(x, y)
+    Ti = griddata(points=gaussianCoordTranspose, values=objectValue, xi=(X, Y), method='cubic')
+    plt.contourf(X, Y, Ti)
+    plt.colorbar()
     plt.show()
 
