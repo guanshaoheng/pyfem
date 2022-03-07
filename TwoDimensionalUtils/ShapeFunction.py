@@ -8,9 +8,9 @@ import time
 
 
 class TwoDimensionShape:
-    def __init__(self):
+    def __init__(self, Nnum=4):
         self.ndim = 2
-        self.Nnum = 4
+        self.Nnum = Nnum
         self.gaussianPoints = self.getGaussian()
         self.N, self.N_diff_local = self.getN_diff()
         self.N_diff_global = self.N_diff_local
@@ -46,8 +46,6 @@ class TwoDimensionShape:
             D = np.zeros(shape=(2, 2, 2, 2))
             D[0, 0, 0, 0] = lam + G * 2
             D[1, 1, 1, 1] = lam + G * 2
-            # D[0, 0, 1, 1] = D[1, 1, 0, 0] = lam
-            # D[0, 1, 0, 1] = D[0, 1, 1, 0] = D[1, 0, 0, 1] = D[1, 0, 1, 0] = G
             D[0, 0, 1, 1] = D[1, 1, 0, 0] = lam
             D[0, 1, 0, 1] = D[0, 1, 1, 0] = D[1, 0, 0, 1] = D[1, 0, 1, 0] = G
         je = np.einsum('ni,pnj->pij', x, self.N_diff_local)  # pij
@@ -55,7 +53,7 @@ class TwoDimensionShape:
         je_inv = np.linalg.inv(je)  # pij -> pji
         self.N_diff_global = np.einsum('pmj,pji->pmi', self.N_diff_local, je_inv)
         # NOTE: VERY IMPORTANT!!!!!
-        K_element = np.einsum('pmi,ijkl,pnk,p->mjnl', self.N_diff_global, D, self.N_diff_global, je_det)
+        K_element = np.einsum('pmi, ijkl, pnk,p->mjnl', self.N_diff_global, D, self.N_diff_global, je_det)
         return K_element
 
     def displacementBoundaryCondition(self, K_global, mask, f):
@@ -100,8 +98,6 @@ class TwoDimensionShape:
         nodeAddNum_inv = 1/nodeAddNum
         epsilonNode = np.einsum('pij, p->pij', epsilonNodeAdd, nodeAddNum_inv)
         return epsilonNode
-
-
 
 
 def stiffnessAssembling(nodeIndex, kList, node2Element, ndim=2, Nnum=4):

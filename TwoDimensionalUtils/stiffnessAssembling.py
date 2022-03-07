@@ -4,8 +4,8 @@ from TwoDimensionalUtils.ShapeFunction import TwoDimensionShape, plotElement, \
     stiffnessAssembling, plotGuassian, saveVTK
 from scipy.interpolate import griddata
 import time
-import pyvista as pv
-import vtk
+# import pyvista as pv
+# import vtk
 
 if __name__ == '__main__':
     ndim = 2
@@ -83,6 +83,10 @@ if __name__ == '__main__':
     plt.show()
     # plt.savefig("./node_%d_element_%d.png" % (nodeNum, elementNum), pmi=200)
 
+    # ---------------------------------------------
+    # write to vtk (customization)
+    saveVTK('./results.vtk', x_, node2Element, **{"u": u, "$\epsilon$": epsilonNode})
+
     # ------------------------------------------------------
     # # pyvista
     # nodeCoord_3 = np.concatenate((nodeCoord+u, np.zeros(shape=(len(nodeCoord), 1), dtype=np.float)), axis=1)
@@ -97,12 +101,6 @@ if __name__ == '__main__':
     # grid.point_data['$\epsilon_{xy}$'] = epsilonNode[:, 0, 1]
     # grid.plot(show_edges=True, cpos='xy')
     # grid.save('./results_pyvist.vtk', binary=False)
-
-    #
-    # # ---------------------------------------------
-    # write to vtk
-
-    saveVTK('./results.vtk', x_, node2Element, **{"u": u, "$\epsilon$": epsilonNode})
 
     #
     #     # -----------------------------------------------------
