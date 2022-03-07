@@ -65,8 +65,12 @@ class TwoDimensionShape:
     def getStrain(self, u, node2Element, nodeCoord):
         uElementNode = u[node2Element]
         coordElementNode = nodeCoord[node2Element]
-        epsilon = np.einsum('pmi, qmj->pqij', uElementNode, self.N_diff_global)
-        epsilon = 0.5*(epsilon + np.einsum('pqij->pqji', epsilon))
+        je = np.einsum('ni,pnj->pij', nodeCoord, self.N_diff_local)  # pij
+        # je_det = np.linalg.det(je)  # p
+        je_inv = np.linalg.inv(je)  # pij -> pji
+        N_diff_global = np.einsum('pmj,pji->pmi', self.N_diff_local, je_inv)
+        u_grad = np.einsum('pmi, qmj->pqij', uElementNode, N_diff_global)
+        epsilon = 0.5*(u_grad + np.einsum('pqij->pqji', u_grad))
         epsilonCoord = np.einsum('pmi, qm->pqi', coordElementNode, self.N)
         return epsilon, epsilonCoord
 
@@ -113,12 +117,10 @@ def stiffnessAssembling(nodeIndex, kList, node2Element, ndim=2, Nnum=4):
     return k_global
 
 
-
 def plotElement(coord, *args):
     coord = np.concatenate((coord, coord[0:1]))
     plt.plot(coord[:, 0], coord[:, 1], *args)
     return
-
 
 def plotGuassian(coord, *args):
     for gaussianPoints in coord:
@@ -170,61 +172,4 @@ def saveVTK(fileName, nodeCoord, node2Element, **kwargs):
                     f.write('%.8f %.8f %.8f\n' % (uu[0], uu[1], 0.))
     return
 
-
-if __name__ == "__main__":
-    # ----------------------------------------------------
-    # shape function
-    domain = TwoDimensionShape()
-    nodeCoord = np.array([[0., 0.], [1., 0.], [1., 1.], [0., 1.]], dtype=np.float)
-    node2Element = np.array([[0, 1, 2, 3]])
-    elementNum = len(node2Element)
-    nodeIndex = np.arange(len(nodeCoord))
-    x = nodeCoord[node2Element[0]]
-    k = []
-    for i in range(elementNum):
-        k.append(domain.getElementStiffness(x=nodeCoord[node2Element[i]]))
-    K_global = stiffnessAssembling(nodeIndex=nodeIndex, kList=k, node2Element=node2Element)
-
-    ndim = x.shape[-1]
-    nNode = x.shape[0]
-
-    # f = np.array([[0, 0], [0, 0], [-1e6, -0], [0, 0]])
-    f = np.zeros_like(x, dtype=np.float)
-    f[2] = np.array([-1e6, +0])
-
-    # ----------------------------------------------------
-    # boundary conditions
-    mask_constrained = np.zeros_like(x)
-    mask_constrained[0] = np.array([1, 1])  # where the 1st boundary condition is applied
-    mask_constrained[1] = np.array([0, 1])  # where the 1st boundary condition is applied
-    uValue = mask_constrained*0.
-    k_free, f_free = domain.displacementBoundaryCondition(K_global=K_global, mask=mask_constrained, f=f)
-    u, f_node = domain.solve(mask=mask_constrained, K_global=K_global,
-        K_free=k_free, f_free=f_free, uValue=uValue)
-    epsilon, gaussianCoord = domain.getStrain(u=u, node2Element=node2Element, nodeCoord=nodeCoord+u)
-
-    x_ = nodeCoord+u
-    plotElement(nodeCoord, 'ko-')
-    plotElement(x_, 'bo-')
-    plotGuassian(gaussianCoord, 'ro')
-    for i in range(4):
-        plt.text(x=nodeCoord[i, 0], y=nodeCoord[i, 1], s='%d' % i, fontsize=15)
-    plt.axis('equal')
-    plt.show()
-
-
-    # ---------------------------------------------
-    # plot strain
-    gaussianCoordTranspose = gaussianCoord.reshape(-1, 2)
-    objectValue = []
-    for element in epsilon:
-        for gaussian in element:
-            objectValue.append(gaussian[1, 1])
-    x = np.linspace(0, 1, 100)
-    y = np.linspace(0, 1, 100)
-    X, Y = np.meshgrid(x, y)
-    Ti = griddata(points=gaussianCoordTranspose, values=objectValue, xi=(X, Y), method='cubic')
-    plt.contourf(X, Y, Ti)
-    plt.colorbar()
-    plt.show()
 
