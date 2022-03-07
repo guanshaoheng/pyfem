@@ -1,6 +1,12 @@
 import matplotlib.pyplot as plt
 # import numpy as np
 
+'''
+        Author: Wang Jingzhou
+        Email: Andrewwang@whu.edu.cn
+        Affiliation: School of water resources and hydropower engineering, Wuhan University
+'''
+
 # 网格展示
 def displayMesh(mesh):
     plt.figure()

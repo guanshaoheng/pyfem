@@ -1,7 +1,13 @@
-from mesh import *
-from display import *
-from solve import *
+from TwoDimensionalUtils.mesh import *
+from TwoDimensionalUtils.display import *
+from TwoDimensionalUtils.TriShapeFunction import *
 import numpy as np
+
+'''
+        Author: Wang Jingzhou
+        Email: Andrewwang@whu.edu.cn
+        Affiliation: School of water resources and hydropower engineering, Wuhan University
+'''
 
 if __name__ == "__main__":
     points = [Point(1, [-5, 0]),
@@ -25,7 +31,7 @@ if __name__ == "__main__":
     lines = [Line(i, [points[i], points[(i + 1) % len(points)]])
              for i in range(len(points))]
     domain = Domain(lines)
-    # domain.divideBoundary("length", 20)
+    domain.divideBoundary("length", 20)
     mesh = mesh(domain)
     displayMesh(mesh)
     num = len(mesh.point_name)

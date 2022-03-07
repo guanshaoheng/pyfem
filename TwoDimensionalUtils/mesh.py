@@ -1,6 +1,12 @@
-from data import *
+from TwoDimensionalUtils.data import *
 import numpy as np
 # from display import displayMesh
+
+'''
+        Author: Wang Jingzhou
+        Email: Andrewwang@whu.edu.cn
+        Affiliation: School of water resources and hydropower engineering, Wuhan University
+'''
 
 def mesh(domain):
     points = np.array([domain.point[point_name].coord
