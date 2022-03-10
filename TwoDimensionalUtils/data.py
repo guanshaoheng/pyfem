@@ -8,7 +8,7 @@ import math
 '''
 
 
-# 点类
+# class of the point
 class Point(object):
     def __init__(self, name, coord):
         self.name = name
@@ -20,7 +20,7 @@ class Point(object):
         return distance
 
 
-# 边类
+# class of the line
 class Line(object):
     def __init__(self, name, points):
         self.name = name
@@ -28,13 +28,13 @@ class Line(object):
         self.point_name = [point.name for point in points]
 
 
-# 求解域类
+# class of the domain
 class Domain(object):
     def __init__(self, lines):
-        # 边界结构组
+        # define the data structure of lines in domain
         self.line_name = set()
         self.line = dict()
-        # 点结构组
+        # define the data structure of points in domain
         self.point_name = set()
         self.point = dict()
         for line in lines:
@@ -44,7 +44,7 @@ class Domain(object):
                 self.point_name.add(point.name)
                 self.point[point.name] = point
 
-    # 判断给定点是否在求解域内
+    # judge if the specify point is in the domain
     def insideJudge(self, point):
         O = point.coord
         D = np.zeros_like(O)
@@ -63,7 +63,7 @@ class Domain(object):
                     t_set.add(round(float(u[0]), 10))
         return len(t_set) % 2
 
-    # 求解域边界细分
+    # divide the boundary of the domain
     def divideBoundary(self, type, value):
         origin_line_name = [line_name for line_name in self.line_name]
         for line_name in origin_line_name:
@@ -95,17 +95,17 @@ class Domain(object):
             self.line_name.discard(line_name)
 
 
-# 三角形单元类
+# class of the triangle element
 class Triangle(object):
     def __init__(self, name, points):
         self.name = name
         self.triangle = np.array([point.coord for point in points])
         D_1 = np.mat(self.triangle[1:, :] - self.triangle[:-1, :])
-        # 向量叉乘为0，三点共线
+        # these three points are in one line if the cross of these two vector equal zero
         if np.linalg.det(D_1) == 0:
             print("该三角形三点共线，请校核。")
         else:
-            # 逆时针排序检测
+            # judge the order of these three points
             if np.linalg.det(D_1) < 0:
                 points[-2], points[-1] = points[-1], points[-2]
                 self.triangle = np.array([point.coord for point in points])
@@ -122,13 +122,13 @@ class Triangle(object):
         D_3 = self.circle_center - np.mat(self.triangle[0, :])
         self.R = float(np.sqrt(D_3 * D_3.T))
 
-    # 判断点是否在三角形外接圆内
+    # judge if the specify point is in the circumscribed circle of this triangle element
     def insideJudge(self, point):
         D = self.circle_center - np.mat(point.coord)
         r = float(np.sqrt(D * D.T))
         return r <= self.R
 
-    # 判断点是否在三角形内
+    # judge if the specify point is in this triangle element
     def ifPointInside(self, point):
         O = point.coord
         V = np.array([self.point[point_name].coord
@@ -143,10 +143,10 @@ class Triangle(object):
             return 0
 
 
-# 三角形网格类
+# class of the triangle mesh
 class Mesh(object):
-    # 三角形网格的初始化
-    # 需提供包含所有边界点的初始超级三角形
+    # initialization of the triangle mesh
+    # create a initial mesh with one or more super triangle elements
     def __init__(self, triangles):
         self.triangle = {triangle.name:triangle
                          for triangle in triangles}
@@ -160,32 +160,31 @@ class Mesh(object):
                       for point_name in triangle.point_name}
 
     def addPoint(self, point):
-        # 找出需要删除的三角形
+        # find out which triangle elements should be deleted
         triangle_del = []
         for name in self.triangle_name:
             triangle = self.triangle[name]
             if triangle.insideJudge(point):
                 triangle_del.append(name)
 
-        # 建立被删除三角形的顶点字典，保留顶点信息
+        # save the information of these points in those elements which will be deleted soon
         points_saved = dict()
         for name in triangle_del:
             points_saved.update(self.triangle[name].point)
-        # 保留被删除三角形的边的信息
-        # 被两个三角形单元共用的边需要删除无需保留
+        # save the information of these lines in those elements which will be deleted soon
+        # the information of those lines which are shared by two elements don't need to be saved
         lines = []
         for name in triangle_del:
             for i in range(3):
                 point_1 = self.triangle[name].point_name[i]
                 point_2 = self.triangle[name].point_name[(i + 1) % 3]
                 line = sorted([point_1, point_2])
-                # 加入当前选取的边，若该边已被记录过，
-                # 说明该边为两个三角形共用，应删除
+                # add the new line and delete the line shared by two elements
                 if line in lines:
                     lines.remove(line)
                 else:
                     lines.append(line)
-        # 生成新的三角形网格
+        # create a new mesh
         new_triangle_list = []
         for line in lines:
             points = [points_saved[name] for name in line]
@@ -193,7 +192,7 @@ class Mesh(object):
             points_test = np.array([point_i.coord
                                     for point_i in points])
             D_1 = np.mat(points_test[1:, :] - points_test[:-1, :])
-            # 需要回避三单共线的情况
+            # create new element only when these three points are not in one line
             if np.linalg.det(D_1) != 0:
                 new_name = max(self.triangle_name) + 1
                 new_triangle = Triangle(new_name, points)
@@ -202,42 +201,41 @@ class Mesh(object):
                 new_triangle_list.append(new_name)
         self.point_name.add(point.name)
         self.point[point.name] = point
-        # 删除旧的需要删除的三角形网格
+        # delete those elements whose circumscribed circle cover the new point
         for name in triangle_del:
             del self.triangle[name]
             self.triangle_name.discard(name)
         return new_triangle_list, triangle_del
 
-    # 删除点，用于移除超级三角形
+    # remove the point from the mesh
     def delPoint(self, point):
         point_name = point.name
         triangle_del = []
-        # 确定需要移除的三角形
+        # find out the elements contain the specify point
         for triangle_name in self.triangle_name:
             tetra = self.triangle[triangle_name]
             if point_name in tetra.point_name:
                 triangle_del.append(triangle_name)
-        # 移除相应的三角形
+        # remove those element from mesh
         for triangle_name in triangle_del:
             self.delTriangle(self.triangle[triangle_name])
-        # 删除相应的点
+        # delete the specify point
         self.point_name.discard(point_name)
         del self.point[point_name]
 
         return point
 
-    # 删除多余的三角形
+    # remove the element from the mesh
     def delTriangle(self, triangle):
         if triangle.name in self.triangle_name:
             del self.triangle[triangle.name]
             self.triangle_name.discard(triangle.name)
 
-    # 初始化长度标尺和单元无量纲半径
+    # initialization of the parameter which will be used to evaluate the quality of mesh
     def initMeshParam(self, domain):
         self.point_value = dict()
         point_to_point = dict()
 
-        # 寻找边界上相邻点
         for line_name in domain.line_name:
             line = domain.line[line_name]
             for point_name in line.point_name:
@@ -246,7 +244,6 @@ class Mesh(object):
                 for link_point in line.point_name:
                     point_to_point[point_name].add(link_point)
 
-        # 计算边界点长度标尺
         for point_name in domain.point_name:
             self.point_value[point_name] = 0
             point_to_point[point_name].discard(point_name)
@@ -257,14 +254,12 @@ class Mesh(object):
             self.point_value[point_name] *= np.sqrt(3) / 2 \
                                             / len(point_to_point[point_name])
 
-        # 计算单元外接圆圆心长度标尺及无量纲半径
         self.circle_value = dict()
         self.R = dict()
         for triangle_name in self.triangle_name:
             self.circle_value[triangle_name], self.R[triangle_name] \
                 = self.calCircleValue(triangle_name)
 
-    # 计算给定单元的圆心长度标尺和单元的无量纲半径
     def calCircleValue(self, triangle_name):
         triangle = self.triangle[triangle_name]
         circle_center = Point(max(self.point_name) + 1,
@@ -280,7 +275,6 @@ class Mesh(object):
         R = triangle.R / L
         return L, R
 
-    # 计算点的长度标尺
     def calPointValue(self, triangle_name, point):
         triangle = self.triangle[triangle_name]
         up = 0
@@ -292,14 +286,14 @@ class Mesh(object):
         L = up / down
         return L
 
-    # 更新长度标尺和单元无量纲半径
+    # update the parameter
     def updateMeshParam(self, triangle_name):
         triangle = self.triangle[triangle_name]
         circle_center = np.array(triangle.circle_center).flatten()
         new_point = Point(max(self.point_name) + 1, circle_center)
-        # 计算新点的长度标尺
+
         self.point_value[new_point.name] = self.circle_value[triangle_name]
-        # 加入新点
+
         new_triangle_list, triangle_del = self.addPoint(new_point)
         for new_triangle_name in new_triangle_list:
             self.circle_value[new_triangle_name], self.R[new_triangle_name] \
