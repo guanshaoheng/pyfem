@@ -149,8 +149,8 @@ def twoDimFEM(mesh, f, mask):
     for i in range(elementNum):
         plotElement(nodeCoord[node2Element[i]], 'ko-')
         plotElement(x_[node2Element[i]], 'bo-')
-    for j in range(nodeNum):
-        plt.text(x=nodeCoord[j, 0], y=nodeCoord[j, 1], s=str(j))
+    # for j in range(nodeNum):
+        # plt.text(x=nodeCoord[j, 0], y=nodeCoord[j, 1], s=str(j))
         # plt.text(x=x_[j, 0], y=x_[j, 1], s=str(j))
     plt.axis('equal')
     plt.show()
