@@ -31,6 +31,10 @@ if __name__ == "__main__":
     f = np.zeros((num, 2))
     mask = np.full((num, 2), np.nan)
     # apply pressure
+    # TODO pressure should be calculated with regard to the lenght of the boundary (2D) (or area of the surface in 3D)
+    # TODO add a function to integrate the pressure on the top
+    # TODO use the quadr mesh
+    # TODO save the figures and add the computational results to the readme file
     pressure = 1.0e6
     points_left = mesh.getBoundaryPoints(0, 0)
     for point_name in points_left:
@@ -47,4 +51,5 @@ if __name__ == "__main__":
         points_top = mesh.getBoundaryPoints(1, 0.7)
         for point_name in points_top:
             mask[point_name - 1] = np.array([0, displacement])
-        twoDimFEM(mesh, f, mask)
+        twoDimFEM(mesh, f, mask, i)
+
