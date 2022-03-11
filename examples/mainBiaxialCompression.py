@@ -1,3 +1,5 @@
+import os.path
+
 from TwoDimensionalUtils.mesh import *
 from TwoDimensionalUtils.display import *
 from TwoDimensionalUtils.TriShapeFunction import *
@@ -10,6 +12,11 @@ import numpy as np
 '''
 
 if __name__ == "__main__":
+    # figs save path
+    figDirectory = 'examples/biaCompression'
+    if not os.path.exists(figDirectory):
+        os.mkdir(figDirectory)
+
     # create the model of calculation
     points = [Point(1, [0, 0]),
               Point(2, [0.3, 0]),
@@ -51,5 +58,6 @@ if __name__ == "__main__":
         points_top = mesh.getBoundaryPoints(1, 0.7)
         for point_name in points_top:
             mask[point_name - 1] = np.array([0, displacement])
-        twoDimFEM(mesh, f, mask, i)
+        # solve
+        twoDimFEM(mesh, f, mask, step=i, filePath=figDirectory)
 

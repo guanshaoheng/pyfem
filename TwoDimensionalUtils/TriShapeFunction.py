@@ -1,3 +1,5 @@
+import os.path
+
 import numpy as np
 import sympy as sym
 import matplotlib.pyplot as plt
@@ -117,7 +119,7 @@ def plotGuassian(coord, *args):
         plt.text(x=coorGaussian[0], y=coorGaussian[1], s=str(i))
     return
 
-def twoDimFEM(mesh, f, mask):
+def twoDimFEM(mesh, f, mask, step, filePath):
     # get the information of the elements from the mesh
     nodeCoord = np.array([mesh.point[point_name].coord
                           for point_name in sorted(mesh.point_name)])
@@ -147,6 +149,8 @@ def twoDimFEM(mesh, f, mask):
 
     x_ = nodeCoord + u
     # plotGuassian(gaussianCoord, 'ro')
+    print()
+    print('\t Solving step %d' % step)
     for i in range(elementNum):
         plotElement(nodeCoord[node2Element[i]], 'ko-')
         plotElement(x_[node2Element[i]], 'bo-')
@@ -154,4 +158,6 @@ def twoDimFEM(mesh, f, mask):
         # plt.text(x=nodeCoord[j, 0], y=nodeCoord[j, 1], s=str(j))
         # plt.text(x=x_[j, 0], y=x_[j, 1], s=str(j))
     plt.axis('equal')
-    plt.show()
+    fileName = os.path.join(filePath, 'biaxial_%d' % step)
+    plt.savefig(fileName)
+    plt.close()
