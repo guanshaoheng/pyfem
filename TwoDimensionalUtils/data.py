@@ -302,4 +302,11 @@ class Mesh(object):
             del self.circle_value[triangle_name_del]
             del self.R[triangle_name_del]
 
+    def getBoundaryPoints(self, index, value):
+        point_selected = []
+        for point_name in self.point_name:
+            coord = self.point[point_name].coord
+            if round(coord[index], 10) == value:
+                point_selected.append(point_name)
+        return point_selected
 
