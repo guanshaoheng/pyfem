@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
         Affiliation: School of water resources and hydropower engineering, Wuhan University
 '''
 
-# 网格展示
+# display the mesh
 def displayMesh(mesh):
     plt.figure()
     points_x = [mesh.point[point_name].coord[0]

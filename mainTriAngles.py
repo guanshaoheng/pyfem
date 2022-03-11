@@ -10,6 +10,7 @@ import numpy as np
 '''
 
 if __name__ == "__main__":
+    # create the model of calculation
     points = [Point(1, [-5, 0]),
               Point(2, [100, 0]),
               Point(3, [20, 280]),
@@ -34,13 +35,15 @@ if __name__ == "__main__":
     domain.divideBoundary("length", 20)
     mesh = mesh(domain)
     displayMesh(mesh)
+
+    # set the force and the displacement to calculate
     num = len(mesh.point_name)
     f = np.zeros((num, 2))
     # f[2] = f[3] = f[6] = np.array([0, -5e6])qq
     f[0] = f[5] = np.array([5e7, 0])
-    mask = np.zeros((num, 2))  # node constraints of displacement
-    mask[0] = np.array([1, 1])
-    mask[1] = np.array([0, 1])
+    mask = np.full((num, 2), np.nan) # node constraints of displacement
+    mask[0] = np.array([0, 0])
+    mask[1] = np.array([10, 0])
     # mask[4] = np.array([0, 1])
     twoDimFEM(mesh, f, mask)
 

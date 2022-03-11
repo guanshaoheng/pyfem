@@ -48,10 +48,10 @@ class TwoDimensionShape:
         K_element = np.einsum('pmi,ijkl,pnk,p->mjnl', self.N_diff_global, D, self.N_diff_global, je_det)
         return K_element
 
-    def displacementBoundaryCondition(self, K_global, mask, f):
-        mask_free = np.equal(mask, 0)
+    def displacementBoundaryCondition(self, K_global, mask_free, uValue, f):
+        f_cal = f - np.einsum("minj, nj->mi", K_global, uValue)
         K_free = K_global[mask_free][:, mask_free]
-        f_free = f[mask_free]
+        f_free = f_cal[mask_free]
         return K_free, f_free
 
     def getStrain(self, u, node2Element, nodeCoord):
@@ -62,8 +62,7 @@ class TwoDimensionShape:
         epsilonCoord = np.einsum('pmi, qm->pqi', coordElementNode, self.N)
         return epsilon, epsilonCoord
 
-    def solve(self, mask, K_global, K_free, f_free, uValue):
-        mask_free = np.equal(mask, 0)
+    def solve(self, mask_free, K_global, K_free, f_free, uValue):
         nNode = mask_free.shape[0]
         u_free = np.linalg.solve(K_free, f_free)
         u = np.zeros_like(mask_free, dtype=np.float)
@@ -119,12 +118,12 @@ def plotGuassian(coord, *args):
     return
 
 def twoDimFEM(mesh, f, mask):
-    # 从网格获取计算单元节点信息
+    # get the information of the elements from the mesh
     nodeCoord = np.array([mesh.point[point_name].coord
                           for point_name in sorted(mesh.point_name)])
     node2Element = np.array([mesh.triangle[triangle_name].point_name
                              for triangle_name in mesh.triangle_name]) - 1
-    # 获取单元节点数量
+    # get the number of the elements and nodes
     nodeNum, elementNum = len(nodeCoord), len(node2Element)
     nodeIndex = np.arange(nodeNum)
     elementIndex = np.arange(elementNum)
@@ -135,9 +134,14 @@ def twoDimFEM(mesh, f, mask):
         k.append(shape.getElementStiffness(x=nodeCoord[node2Element[i]]))
     K_global = stiffnessAssembling(nodeIndex=nodeIndex, kList=k, node2Element=node2Element)
 
-    uValue = mask * 0.
-    k_free, f_free = shape.displacementBoundaryCondition(K_global=K_global, mask=mask, f=f)
-    u, f_node = shape.solve(mask=mask, K_global=K_global, K_free=k_free, f_free=f_free, uValue=uValue)
+    mask_free = np.isnan(mask)
+    uValue = mask.copy()
+    uValue[mask_free] = 0
+    k_free, f_free = shape.displacementBoundaryCondition(K_global=K_global,
+                                                         mask_free=mask_free,
+                                                         uValue=uValue, f=f)
+    u, f_node = shape.solve(mask_free=mask_free, K_global=K_global,
+                            K_free=k_free, f_free=f_free, uValue=uValue)
     epsilon, gaussianCoord = shape.getStrain(u=u, node2Element=node2Element, nodeCoord=nodeCoord + u)
     epsilonNode = shape.interpolateStrainToNode(nodeCoord, node2Element, epsilon)
 
@@ -146,8 +150,8 @@ def twoDimFEM(mesh, f, mask):
     for i in range(elementNum):
         plotElement(nodeCoord[node2Element[i]], 'ko-')
         plotElement(x_[node2Element[i]], 'bo-')
-    for j in range(nodeNum):
-        plt.text(x=nodeCoord[j, 0], y=nodeCoord[j, 1], s=str(j))
+    # for j in range(nodeNum):
+        # plt.text(x=nodeCoord[j, 0], y=nodeCoord[j, 1], s=str(j))
         # plt.text(x=x_[j, 0], y=x_[j, 1], s=str(j))
     plt.axis('equal')
     plt.show()
