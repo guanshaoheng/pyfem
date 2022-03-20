@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 
 
 class TwoDimensionShape:
-    def __init__(self, Nnum=3):
+    def __init__(self, Nnum=4):
         self.ndim = 2
         self.Nnum = Nnum
         self.gaussianPoints = self.getGaussian()
@@ -15,16 +15,17 @@ class TwoDimensionShape:
         self.elementStiffness = self.getElementStiffness()
 
     def getGaussian(self):
-        temp = 0.5
-        return np.array([[temp, 0], [temp, temp], [0, temp]])
+        temp = np.sqrt(1 / 3)
+        return np.array([[-temp, -temp], [temp, -temp], [temp, temp], [-temp, temp]])
 
     def getN_diff(self):
         xi, eta = sym.symbols('xi, eta')
         basis = sym.Matrix([xi, eta])
-        N1 = 1 - xi - eta
-        N2 = xi
-        N3 = eta
-        N = sym.Matrix([N1, N2, N3])
+        N1 = (1 - xi) * (1 - eta) / 4
+        N2 = (1 + xi) * (1 - eta) / 4
+        N3 = (1 + xi) * (1 + eta) / 4
+        N4 = (1 - xi) * (1 + eta) / 4
+        N = sym.Matrix([N1, N2, N3, N4])
         N_diff = N.jacobian(basis)
         N_array = np.zeros(shape=(self.Nnum, self.Nnum))
         N_d_array = np.zeros(shape=(self.Nnum, self.Nnum, self.ndim))
@@ -35,7 +36,7 @@ class TwoDimensionShape:
 
     def getElementStiffness(self, x=None, D=None):
         if x is None:
-            x = np.array([[1, 0], [0, 1], [0, 0]])
+            x = np.array([[-1, -1], [1, -1], [1, 1], [-1, 1]])
         if D is None:
             E, mu = 1e8, 0.2
             lam, G = E * mu / (1 + mu) / (1 - 2 * mu), 0.5 * E / (1 + mu)
@@ -44,10 +45,10 @@ class TwoDimensionShape:
             D[0, 0, 1, 1] = D[1, 1, 0, 0] = lam
             D[0, 1, 0, 1] = D[0, 1, 1, 0] = D[1, 0, 0, 1] = D[1, 0, 1, 0] = G
         je = np.einsum('ni,pnj->pij', x, self.N_diff_local)
-        je_det =  np.einsum('i,i->i', np.linalg.det(je), np.array([1/6, 1/6, 1/6]))
+        je_det = np.linalg.det(je)
         je_inv = np.linalg.inv(je)
         self.N_diff_global = np.einsum('pmj,pji->pmi', self.N_diff_local, je_inv)
-        K_element = np.einsum('pmi,ijkl,pnk,p->mjnl', self.N_diff_global, D, self.N_diff_global, je_det)
+        K_element = np.einsum('pmi, ijkl, pnk,p->mjnl', self.N_diff_global, D, self.N_diff_global, je_det)
         return K_element
 
     def displacementBoundaryCondition(self, K_global, mask_free, uValue, f):
@@ -92,7 +93,7 @@ class TwoDimensionShape:
         epsilonNode = np.einsum('pij, p->pij', epsilonNodeAdd, nodeAddNum_inv)
         return epsilonNode
 
-def stiffnessAssembling(nodeIndex, kList, node2Element, ndim=2, Nnum=3):
+def stiffnessAssembling(nodeIndex, kList, node2Element, ndim=2, Nnum=4):
     nodeNum = len(nodeIndex)
     elementNum = len(node2Element)
     k_global = np.zeros(shape=(nodeNum, ndim, nodeNum, ndim), dtype=np.float)
@@ -119,12 +120,12 @@ def plotGuassian(coord, *args):
         plt.text(x=coorGaussian[0], y=coorGaussian[1], s=str(i))
     return
 
-def twoDimFEM(mesh, f, mask, step, filePath):
+def twoDimFEM(node, elem, f, mask, step, filePath):
     # get the information of the elements from the mesh
-    nodeCoord = np.array([mesh.point[point_name].coord
-                          for point_name in sorted(mesh.point_name)])
-    node2Element = np.array([mesh.triangle[triangle_name].point_name
-                             for triangle_name in mesh.triangle_name]) - 1
+    m = node.shape[1]
+    nodeCoord = node.reshape(-1, 2)
+    node2Element = np.array([[i[j, 0] * m + i[j, 1] for j in range(4)]
+                             for i in elem])
     # get the number of the elements and nodes
     nodeNum, elementNum = len(nodeCoord), len(node2Element)
     nodeIndex = np.arange(nodeNum)

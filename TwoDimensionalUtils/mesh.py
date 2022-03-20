@@ -8,7 +8,7 @@ import numpy as np
         Affiliation: School of water resources and hydropower engineering, Wuhan University
 '''
 
-def mesh(domain):
+def triMesh(domain):
     points = np.array([domain.point[point_name].coord
                        for point_name in domain.point_name])
     # get a rectangle cover the points
@@ -34,7 +34,7 @@ def mesh(domain):
     init_triangles = [Triangle(0, points)]
 
     # initialize the mesh
-    mesh = Mesh(init_triangles)
+    mesh = TriMesh(init_triangles)
 
     # add the points at the boundary of the domain
     for point_name in domain.point_name:
@@ -67,3 +67,40 @@ def mesh(domain):
 
     return mesh
 
+# TODO define a function to judge the order of the points
+def pointsOrder(points):
+    pass
+
+def reflect(points, i, j, m, n):
+    xi = 2 / m * i - 1
+    eta = 2 / n * j - 1
+    N1 = (1 - xi) * (1 - eta) / 4
+    N2 = (1 + xi) * (1 - eta) / 4
+    N3 = (1 + xi) * (1 + eta) / 4
+    N4 = (1 - xi) * (1 + eta) / 4
+    N = np.array([N1, N2, N3, N4])
+    coord = np.dot(N, points)
+    return coord.tolist()
+
+def QuadMesh(ori_points, m, n):
+    points = np.array(ori_points)
+    pointsOrder(points)
+    node = []
+    elem = []
+    node_row = []
+    for i in range(m + 1):
+        node_row.append(reflect(points, i, 0, m, n))
+    node.append(node_row)
+
+    for j in range(1, n + 1):
+        node_row = []
+        node_row.append(reflect(points, 0, j, m, n))
+        for i in range(1, m + 1):
+            node_row.append(reflect(points, i, j, m, n))
+            elem.append([[j - 1, i - 1],
+                         [j - 1, i],
+                         [j, i],
+                         [j, i - 1]])
+        node.append(node_row)
+
+    return np.array(node), np.array(elem)
