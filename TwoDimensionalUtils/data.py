@@ -144,7 +144,7 @@ class Triangle(object):
 
 
 # class of the triangle mesh
-class Mesh(object):
+class TriMesh(object):
     # initialization of the triangle mesh
     # create a initial mesh with one or more super triangle elements
     def __init__(self, triangles):
@@ -303,10 +303,21 @@ class Mesh(object):
             del self.R[triangle_name_del]
 
     def getBoundaryPoints(self, index, value):
-        point_selected = []
+        boundary_points = []
         for point_name in self.point_name:
             coord = self.point[point_name].coord
             if round(coord[index], 10) == value:
-                point_selected.append(point_name)
-        return point_selected
+                boundary_points.append(point_name)
+        return boundary_points
 
+    def getBoundaryLines(self, boundary_points):
+        boundary_lines = []
+        for triangle_name in self.triangle_name:
+            triangle = self.triangle[triangle_name]
+            point_selected = []
+            for point_name in triangle.point_name:
+                if point_name in boundary_points:
+                    point_selected.append(point_name)
+            if len(point_selected) == 2:
+                boundary_lines.append(sorted(point_selected))
+        return boundary_lines

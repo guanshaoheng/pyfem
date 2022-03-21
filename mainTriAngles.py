@@ -33,8 +33,8 @@ if __name__ == "__main__":
              for i in range(len(points))]
     domain = Domain(lines)
     domain.divideBoundary("length", 20)
-    mesh = mesh(domain)
-    displayMesh(mesh)
+    mesh = triMesh(domain)
+    displayTriMesh(mesh)
 
     # set the force and the displacement to calculate
     num = len(mesh.point_name)
