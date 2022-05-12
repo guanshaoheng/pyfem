@@ -45,5 +45,5 @@ if __name__ == "__main__":
     mask[0] = np.array([0, 0])
     mask[1] = np.array([10, 0])
     # mask[4] = np.array([0, 1])
-    twoDimFEM(mesh, f, mask)
+    twoDimFEM(mesh, f, mask, step=0, filePath='./')
 
