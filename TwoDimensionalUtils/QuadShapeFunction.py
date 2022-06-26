@@ -1,5 +1,4 @@
-import os.path
-
+import os
 import numpy as np
 import sympy as sym
 import matplotlib.pyplot as plt
@@ -41,7 +40,7 @@ class TwoDimensionShape:
             E, mu = 1e8, 0.2
             lam, G = E * mu / (1 + mu) / (1 - 2 * mu), 0.5 * E / (1 + mu)
             D = np.zeros(shape=(2, 2, 2, 2))
-            D[0, 0, 0, 0] = D[1, 1, 1, 1] = lam + G * 2
+            D[0, 0, 0, 0] = D[1, 1, 1, 1] = lam + G * 2.
             D[0, 0, 1, 1] = D[1, 1, 0, 0] = lam
             D[0, 1, 0, 1] = D[0, 1, 1, 0] = D[1, 0, 0, 1] = D[1, 0, 1, 0] = G
         je = np.einsum('ni,pnj->pij', x, self.N_diff_local)
@@ -106,7 +105,6 @@ def stiffnessAssembling(nodeIndex, kList, node2Element, ndim=2, Nnum=4):
     return k_global
 
 
-
 def plotElement(coord, *args):
     coord = np.concatenate((coord, coord[0:1]))
     plt.plot(coord[:, 0], coord[:, 1], *args)
@@ -119,6 +117,7 @@ def plotGuassian(coord, *args):
     for i, coorGaussian in enumerate(coord[0]):
         plt.text(x=coorGaussian[0], y=coorGaussian[1], s=str(i))
     return
+
 
 def twoDimFEM(node, elem, f, mask, step, filePath):
     # get the information of the elements from the mesh

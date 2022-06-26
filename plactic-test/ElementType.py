@@ -1,6 +1,7 @@
 import numpy as np
 import sympy as sym
 
+
 class ElementType(object):
     def __init__(self, node_list, x, cons):
         self.node_list = node_list
@@ -45,7 +46,7 @@ class ElementType(object):
     # 积分点处的应力和应变
     def getDEAndDS(self, d_u):
         d_e = (np.einsum("pki, kj->pij", self.N_d_global, d_u) +
-             np.einsum("pki, kj->pji", self.N_d_global, d_u)) / 2
+               np.einsum("pki, kj->pji", self.N_d_global, d_u)) / 2
         # TODO 进入本构的计算
         d_s = np.einsum("pijkl, pkl->pij", self.cons.Dep, d_e)
         return d_e, d_s
@@ -65,12 +66,13 @@ class ElementType(object):
                                    self.N_d_global, self.cons.Dep,
                                    self.N_d_global, je_det, self.W)
 
+
 class Q4(ElementType):
     def getGaussian(self):
         self.n_gauss = 4
         temp = np.sqrt(1 / 3)
         self.gaussian_points = np.array([[-temp, -temp], [temp, -temp],
-                                        [temp, temp], [-temp, temp]])
+                                         [temp, temp], [-temp, temp]])
         self.W = np.array([1, 1, 1, 1])
 
     def shapeFunction(self):
@@ -90,6 +92,7 @@ class Q4(ElementType):
         v /= 2
         return abs(v)
 
+
 class CST(ElementType):
     def getGaussian(self):
         self.n_gauss = 3
@@ -103,6 +106,7 @@ class CST(ElementType):
         N2 = xi
         N3 = eta
         self.N = sym.Matrix([N1, N2, N3])
+
 
 class C3D8(ElementType):
     def getGaussian(self):
@@ -128,6 +132,7 @@ class C3D8(ElementType):
         N8 = (1 - xi) * (1 + eta) * (1 + zeta) / 8
         self.N = sym.Matrix([N1, N2, N3, N4,
                              N5, N6, N7, N8])
+
 
 class TET4(ElementType):
     def getGaussian(self):
