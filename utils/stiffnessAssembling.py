@@ -1,9 +1,8 @@
 import matplotlib.pyplot as plt
 import numpy as np
-from TwoDimensionalUtils.ShapeFunction import TwoDimensionShape, plotElement, \
+from utils.ShapeFunction import TwoDimensionShape, plotElement, \
     stiffnessAssembling, plotGuassian, saveVTK
-from scipy.interpolate import griddata
-import time
+
 # import pyvista as pv
 # import vtk
 

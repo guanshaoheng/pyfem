@@ -1,5 +1,5 @@
-from TwoDimensionalUtils.mesh import *
-from TwoDimensionalUtils.display import *
+from utils.mesh import *
+from utils.display import *
 from TwoDimensionalUtils.TriShapeFunction import *
 import numpy as np
 

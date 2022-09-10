@@ -1,8 +1,6 @@
-import os.path
 from TwoDimensionalUtils.QuadShapeFunction import *
-import numpy as np
-from TwoDimensionalUtils.mesh import *
-from TwoDimensionalUtils.display import *
+from utils.mesh import *
+from utils.display import *
 
 '''
         Author: Wang Jingzhou

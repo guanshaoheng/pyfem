@@ -1,7 +1,6 @@
 import numpy as np
 from matplotlib import pyplot as plt
-from scipy.interpolate import griddata
-from TwoDimensionalUtils.ShapeFunction import TwoDimensionShape, stiffnessAssembling, plotElement, plotGuassian
+from utils.ShapeFunction import TwoDimensionShape, stiffnessAssembling, plotElement, plotGuassian
 from utils.display2Dfield import plot_node_displacement
 
 if __name__ == "__main__":
